@@ -1,0 +1,96 @@
+---
+title: "Plotly"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+we are going to make plotly plot
+
+## load package and data
+
+```{r}
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(plotly)
+```
+
+```{r}
+get_all_inspections = function(url) {
+  
+  all_inspections = vector("list", length = 0)
+  
+  loop_index = 1
+  chunk_size = 50000
+  DO_NEXT = TRUE
+  
+  while (DO_NEXT) {
+    message("Getting data, page ", loop_index)
+    
+    all_inspections[[loop_index]] = 
+      GET(url,
+          query = list(`$order` = "zipcode",
+                       `$limit` = chunk_size,
+                       `$offset` = as.integer((loop_index - 1) * chunk_size)
+                       )
+          ) %>%
+      content("text") %>%
+      fromJSON() %>%
+      as_tibble()
+    
+    DO_NEXT = dim(all_inspections[[loop_index]])[1] == chunk_size
+    loop_index = loop_index + 1
+  }
+  
+  all_inspections
+  
+}
+
+url = "https://data.cityofnewyork.us/resource/43nn-pn8j.json"
+
+nyc_inspections = 
+  get_all_inspections(url) %>%
+  bind_rows() 
+```
+
+lets make a scatterplot 
+
+```{r}
+nyc_inspections %>% 
+  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
+ mutate(
+    text_label = str_c("Description: ", cuisine_description, "Restaurant: ", dba)
+  ) %>% 
+  plot_ly(
+    x = ~street, y = ~score, color = ~street,
+    type = "scatter", mode = "markers",
+    alpha = .3, text = ~text_label, colors = "viridis"
+  )
+```
+
+box plot
+
+```{r}
+nyc_inspections %>% 
+  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
+  mutate(score = as.numeric(score), street = fct_reorder(cuisine_description, score)) %>% 
+  plot_ly(
+    y = ~score, color = ~cuisine_description,
+    type = "box", colors = "viridis"
+  )
+```
+
+can we make a bar plot
+
+```{r}
+nyc_inspections %>% 
+  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
+  count(cuisine_description) %>% 
+  mutate(cuisine_description = fct_reorder(cuisine_description, n)) %>% 
+  plot_ly(x = ~cuisine_description, y = ~n, color = ~cuisine_description, type = "bar", colors = "viridis")
+```
+
+
+

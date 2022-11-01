@@ -10,9 +10,23 @@ output:
 
 ![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
 
-Here's some text. I like the internet. I use [google](https://www.google.com/) all the time.
+___
 
-Here's direct link to the about page:[about](about.html)
+Education:
+
+New York University    2018-2022
+
+Major: B.A. Mathematics and Economics 
+
+Columbia University    2022-2024
+
+Major: M.S. Biostatistics 
+
+___
+
+Link to my [Resume](resume.pdf)
+
+Link to the about page:[about](about.html)
 
 
 

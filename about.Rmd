@@ -6,6 +6,5 @@ output:
     toc_float: true
 ---
 
-# This is Yuhuan's website
 
 This website is made in rmarkdown and other stuffs.
