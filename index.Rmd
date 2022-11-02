@@ -8,7 +8,7 @@ output:
 
 # This is Yuhuan's website
 
-![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
+![](https://media.giphy.com/media/Wj7lNjMNDxSmc/giphy.gif)
 
 ___
 
@@ -28,5 +28,6 @@ Link to my [Resume](resume.pdf)
 
 Link to the about page:[about](about.html)
 
+Link to [Plotly](plotly.html) page
 
 

@@ -10,14 +10,14 @@ we are going to make plotly plot
 
 ## load package and data
 
-```{r}
+```{r, message=FALSE}
 library(tidyverse)
 library(httr)
 library(jsonlite)
 library(plotly)
 ```
-
-```{r}
+The data selected data is about American Restaurant in Manhattan with Critical status and score below 14
+```{r, message=FALSE}
 get_all_inspections = function(url) {
   
   all_inspections = vector("list", length = 0)
@@ -52,16 +52,17 @@ url = "https://data.cityofnewyork.us/resource/43nn-pn8j.json"
 
 nyc_inspections = 
   get_all_inspections(url) %>%
-  bind_rows() 
+  bind_rows() %>% 
+  filter(boro == "Manhattan", critical_flag == "Critical", score %in% 0:13, cuisine_description == "American")
 ```
 
-lets make a scatterplot 
+Scatterplot of relationship between street and score
 
 ```{r}
 nyc_inspections %>% 
-  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
- mutate(
-    text_label = str_c("Description: ", cuisine_description, "Restaurant: ", dba)
+   mutate(
+     score = as.numeric(score),
+     text_label = str_c("Restaurant: ", dba)
   ) %>% 
   plot_ly(
     x = ~street, y = ~score, color = ~street,
@@ -70,26 +71,24 @@ nyc_inspections %>%
   )
 ```
 
-box plot
+box plot of score distribution of different violation codes
 
 ```{r}
 nyc_inspections %>% 
-  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
-  mutate(score = as.numeric(score), street = fct_reorder(cuisine_description, score)) %>% 
+  mutate(score = as.numeric(score), violation_code = fct_reorder(violation_code, score)) %>% 
   plot_ly(
-    y = ~score, color = ~cuisine_description,
+    y = ~score, color = ~violation_code,
     type = "box", colors = "viridis"
   )
 ```
 
-can we make a bar plot
+bar plot of count of restaurants in our selected range in each council district 
 
-```{r}
+```{r, message=FALSE}
 nyc_inspections %>% 
-  filter(boro == "Manhattan" & critical_flag == "Critical") %>% 
-  count(cuisine_description) %>% 
-  mutate(cuisine_description = fct_reorder(cuisine_description, n)) %>% 
-  plot_ly(x = ~cuisine_description, y = ~n, color = ~cuisine_description, type = "bar", colors = "viridis")
+  count(council_district) %>% 
+  mutate(council_district = fct_reorder(council_district, n)) %>% 
+  plot_ly(x = ~council_district, y = ~n, color = ~council_district, type = "bar", colors = "viridis")
 ```
 
 

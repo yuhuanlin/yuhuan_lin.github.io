@@ -1,5 +1,5 @@
 ---
-title: "Airbnb Dashboard"
+title: "Inspection Dashboard"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -7,64 +7,89 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-library(flexdashboard)
 library(tidyverse)
-library(p8105.datasets)
+library(httr)
+library(jsonlite)
 library(plotly)
 ```
 
 ```{r, include=FALSE}
-data("nyc_airbnb")
+get_all_inspections = function(url) {
+  
+  all_inspections = vector("list", length = 0)
+  
+  loop_index = 1
+  chunk_size = 50000
+  DO_NEXT = TRUE
+  
+  while (DO_NEXT) {
+    message("Getting data, page ", loop_index)
+    
+    all_inspections[[loop_index]] = 
+      GET(url,
+          query = list(`$order` = "zipcode",
+                       `$limit` = chunk_size,
+                       `$offset` = as.integer((loop_index - 1) * chunk_size)
+                       )
+          ) %>%
+      content("text") %>%
+      fromJSON() %>%
+      as_tibble()
+    
+    DO_NEXT = dim(all_inspections[[loop_index]])[1] == chunk_size
+    loop_index = loop_index + 1
+  }
+  
+  all_inspections
+  
+}
 
-nyc_airbnb = 
-  nyc_airbnb %>% 
-  mutate(rating = review_scores_location / 2) %>%
-  select(
-    borough = neighbourhood_group, neighbourhood, rating, price, room_type, lat, long) %>%
-  filter(
-    !is.na(rating), 
-    borough == "Manhattan",
-    room_type == "Entire home/apt",
-    price %in% 100:500)
+url = "https://data.cityofnewyork.us/resource/43nn-pn8j.json"
+
+nyc_inspections = 
+  get_all_inspections(url) %>%
+  bind_rows() %>% 
+  filter(boro == "Manhattan", critical_flag == "Critical", score %in% 0:13, cuisine_description == "American")
 ```
 
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Chart A
+### Chart A - relationship between street and score
 
 ```{r}
-nyc_airbnb %>% 
-  mutate(
-    text_label = str_c("Price: $", price, "\nRating: ", rating)
+nyc_inspections %>% 
+   mutate(
+     score = as.numeric(score),
+     text_label = str_c("Restaurant: ", dba)
   ) %>% 
   plot_ly(
-    x = ~lat, y = ~long, color = ~price,
+    x = ~street, y = ~score, color = ~street,
     type = "scatter", mode = "markers",
-    alpha = .5, text = ~text_label
+    alpha = .3, text = ~text_label, colors = "viridis"
   )
 ```
 
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Chart B - score of different violation codes
 
 ```{r}
-nyc_airbnb %>% 
-  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+nyc_inspections %>% 
+  mutate(score = as.numeric(score), violation_code = fct_reorder(violation_code, score)) %>% 
   plot_ly(
-    y = ~price, color = ~neighbourhood,
+    y = ~score, color = ~violation_code,
     type = "box", colors = "viridis"
   )
 ```
 
-### Chart C
+### Chart C - count of restaurants in council district
 
 ```{r}
-nyc_airbnb %>% 
-  count(neighbourhood) %>% 
-  mutate(neighbourhood = fct_reorder(neighbourhood, n)) %>% 
-  plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood, type = "bar", colors = "viridis")
+nyc_inspections %>% 
+  count(council_district) %>% 
+  mutate(council_district = fct_reorder(council_district, n)) %>% 
+  plot_ly(x = ~council_district, y = ~n, color = ~council_district, type = "bar", colors = "viridis")
 ```
 
